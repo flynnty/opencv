@@ -7,7 +7,7 @@
 
 #define CV_VERSION_MAJOR    4
 #define CV_VERSION_MINOR    9
-#define CV_VERSION_REVISION 0
+#define CV_VERSION_REVISION 302332  // vecto_v3 commit on revision 4.9.0
 #define CV_VERSION_STATUS   ""
 
 #define CVAUX_STR_EXP(__A)  #__A

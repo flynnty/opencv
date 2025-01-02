@@ -2159,6 +2159,27 @@ public:
     MatSize size;
     MatStep step;
 
+
+    //! vecto_v3 additions to Mat class
+
+    struct PixelMapData {
+        Point point;
+        Vec4b color;
+        uint8_t aaVal;
+        bool aaEn;
+    };
+    using PixelMap = std::vector<PixelMapData>;
+    void addPixelMapData(const Point& point, const Vec4b& color, uint8_t aaVal = 0x00, bool aaEn = false) { pixelMapVec.push_back({point, color, aaVal, aaEn}); }
+    const PixelMap& pixelMap() const { return pixelMapVec; }
+
+    bool pixelMapIsEnabled() const {return pixelMapEn;}
+    void pixelMapEnable() { pixelMapEn = true;}
+    void pixelMapDisable() { pixelMapEn = false;}
+
+private:
+    bool pixelMapEn = false;
+    PixelMap pixelMapVec;
+
 protected:
     template<typename _Tp, typename Functor> void forEach_impl(const Functor& operation);
 };

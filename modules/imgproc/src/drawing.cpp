@@ -277,21 +277,34 @@ Line( Mat& img, Point pt1, Point pt2,
     {
         for( i = 0; i < count; i++, ++iterator )
         {
-            uchar* ptr = *iterator;
-            ptr[0] = color[0];
-            ptr[1] = color[1];
-            ptr[2] = color[2];
+            if (img.pixelMapIsEnabled()) {
+                img.addPixelMapData(iterator.pos(), Vec4b(color[0], color[1], color[2], 0xFF));
+            } else {
+                uchar* ptr = *iterator;
+                ptr[0] = color[0];
+                ptr[1] = color[1];
+                ptr[2] = color[2];
+            }
         }
     }
     else
     {
         for( i = 0; i < count; i++, ++iterator )
         {
-            uchar* ptr = *iterator;
-            if( pix_size == 1 )
-                ptr[0] = color[0];
-            else
-                memcpy( *iterator, color, pix_size );
+            if( pix_size == 1 ) {
+                if (img.pixelMapIsEnabled()) {
+                    img.addPixelMapData(iterator.pos(), Vec4b(color[0], color[0], color[0], 0xFF));
+                } else {
+                    uchar* ptr = *iterator;
+                    ptr[0] = color[0];
+                }
+            } else {
+                if (img.pixelMapIsEnabled() && (pix_size == 4)) {
+                    img.addPixelMapData(iterator.pos(), Vec4b(color[0], color[1], color[2], color[3]));
+                } else {
+                    memcpy( *iterator, color, pix_size );
+                }
+            }
         }
     }
 }
@@ -414,21 +427,25 @@ LineAA( Mat& img, Point2l pt1, Point2l pt2, const void* color )
 
     if( nch == 3 )
     {
-        #define  ICV_PUT_POINT(x, y)        \
-        {                                   \
-            uchar* tptr = ptr + (x)*3 + (y)*step; \
-            _cb = tptr[0];                  \
-            _cb += ((cb - _cb)*a + 127)>> 8;\
-            _cb += ((cb - _cb)*a + 127)>> 8;\
-            _cg = tptr[1];                  \
-            _cg += ((cg - _cg)*a + 127)>> 8;\
-            _cg += ((cg - _cg)*a + 127)>> 8;\
-            _cr = tptr[2];                  \
-            _cr += ((cr - _cr)*a + 127)>> 8;\
-            _cr += ((cr - _cr)*a + 127)>> 8;\
-            tptr[0] = (uchar)_cb;           \
-            tptr[1] = (uchar)_cg;           \
-            tptr[2] = (uchar)_cr;           \
+        #define  ICV_PUT_POINT(x, y)                                                                                  \
+        {                                                                                                             \
+            if (img.pixelMapIsEnabled()) {                                                                            \
+                img.addPixelMapData(Point((x), (y)), Vec4b((uchar)cb, (uchar)cg, (uchar)cr, 0xFF), (uchar)a, true);   \
+            } else {                                                                                                  \
+                uchar* tptr = ptr + (x)*3 + (y)*step;                                                                 \
+                _cb = tptr[0];                                                                                        \
+                _cb += ((cb - _cb)*a + 127)>> 8;                                                                      \
+                _cb += ((cb - _cb)*a + 127)>> 8;                                                                      \
+                _cg = tptr[1];                                                                                        \
+                _cg += ((cg - _cg)*a + 127)>> 8;                                                                      \
+                _cg += ((cg - _cg)*a + 127)>> 8;                                                                      \
+                _cr = tptr[2];                                                                                        \
+                _cr += ((cr - _cr)*a + 127)>> 8;                                                                      \
+                _cr += ((cr - _cr)*a + 127)>> 8;                                                                      \
+                tptr[0] = (uchar)_cb;                                                                                 \
+                tptr[1] = (uchar)_cg;                                                                                 \
+                tptr[2] = (uchar)_cr;                                                                                 \
+            }                                                                                                         \
         }
         if( ax > ay )
         {
@@ -487,13 +504,17 @@ LineAA( Mat& img, Point2l pt1, Point2l pt2, const void* color )
     }
     else if(nch == 1)
     {
-        #define ICV_PUT_POINT(x, y)         \
-        {                                   \
-            uchar* tptr = ptr + (x) + (y) * step; \
-            _cb = tptr[0];                  \
-            _cb += ((cb - _cb)*a + 127)>> 8;\
-            _cb += ((cb - _cb)*a + 127)>> 8;\
-            tptr[0] = (uchar)_cb;           \
+        #define ICV_PUT_POINT(x, y)                                                                                   \
+        {                                                                                                             \
+            if (img.pixelMapIsEnabled()) {                                                                            \
+                img.addPixelMapData(Point((x), (y)), Vec4b((uchar)cb, (uchar)cb, (uchar)cb, 0xFF), (uchar)a, true);   \
+            } else {                                                                                                  \
+                uchar* tptr = ptr + (x) + (y) * step;                                                                 \
+                _cb = tptr[0];                                                                                        \
+                _cb += ((cb - _cb)*a + 127)>> 8;                                                                      \
+                _cb += ((cb - _cb)*a + 127)>> 8;                                                                      \
+                tptr[0] = (uchar)_cb;                                                                                 \
+            }                                                                                                         \
         }
 
         if( ax > ay )
@@ -553,25 +574,29 @@ LineAA( Mat& img, Point2l pt1, Point2l pt2, const void* color )
     }
     else
     {
-        #define  ICV_PUT_POINT(x, y)        \
-        {                                   \
-            uchar* tptr = ptr + (x)*4 + (y)*step; \
-            _cb = tptr[0];                  \
-            _cb += ((cb - _cb)*a + 127)>> 8;\
-            _cb += ((cb - _cb)*a + 127)>> 8;\
-            _cg = tptr[1];                  \
-            _cg += ((cg - _cg)*a + 127)>> 8;\
-            _cg += ((cg - _cg)*a + 127)>> 8;\
-            _cr = tptr[2];                  \
-            _cr += ((cr - _cr)*a + 127)>> 8;\
-            _cr += ((cr - _cr)*a + 127)>> 8;\
-            _ca = tptr[3];                  \
-            _ca += ((ca - _ca)*a + 127)>> 8;\
-            _ca += ((ca - _ca)*a + 127)>> 8;\
-            tptr[0] = (uchar)_cb;           \
-            tptr[1] = (uchar)_cg;           \
-            tptr[2] = (uchar)_cr;           \
-            tptr[3] = (uchar)_ca;           \
+        #define  ICV_PUT_POINT(x, y)                                                                                      \
+        {                                                                                                                 \
+            if (img.pixelMapIsEnabled()) {                                                                                \
+                img.addPixelMapData(Point((x), (y)), Vec4b((uchar)cb, (uchar)cg, (uchar)cr, (uchar)ca), (uchar)a, true);  \
+            } else {                                                                                                      \
+                uchar* tptr = ptr + (x)*4 + (y)*step;                                                                     \
+                _cb = tptr[0];                                                                                            \
+                _cb += ((cb - _cb)*a + 127)>> 8;                                                                          \
+                _cb += ((cb - _cb)*a + 127)>> 8;                                                                          \
+                _cg = tptr[1];                                                                                            \
+                _cg += ((cg - _cg)*a + 127)>> 8;                                                                          \
+                _cg += ((cg - _cg)*a + 127)>> 8;                                                                          \
+                _cr = tptr[2];                                                                                            \
+                _cr += ((cr - _cr)*a + 127)>> 8;                                                                          \
+                _cr += ((cr - _cr)*a + 127)>> 8;                                                                          \
+                _ca = tptr[3];                                                                                            \
+                _ca += ((ca - _ca)*a + 127)>> 8;                                                                          \
+                _ca += ((ca - _ca)*a + 127)>> 8;                                                                          \
+                tptr[0] = (uchar)_cb;                                                                                     \
+                tptr[1] = (uchar)_cg;                                                                                     \
+                tptr[2] = (uchar)_cr;                                                                                     \
+                tptr[3] = (uchar)_ca;                                                                                     \
+            }                                                                                                             \
         }
         if( ax > ay )
         {
@@ -696,16 +721,20 @@ Line2( Mat& img, Point2l pt1, Point2l pt2, const void* color)
 
     if( pix_size == 3 )
     {
-        #define  ICV_PUT_POINT(_x,_y)   \
-        x = (_x); y = (_y);             \
-        if( 0 <= x && x < size.width && \
-            0 <= y && y < size.height ) \
-        {                               \
-            tptr = ptr + y*step + x*3;  \
-            tptr[0] = (uchar)cb;        \
-            tptr[1] = (uchar)cg;        \
-            tptr[2] = (uchar)cr;        \
-        }
+        #define  ICV_PUT_POINT(_x,_y)                                                           \
+        x = (_x); y = (_y);                                                                     \
+        if( 0 <= x && x < size.width &&                                                         \
+            0 <= y && y < size.height )                                                         \
+        {                                                                                       \
+            if (img.pixelMapIsEnabled()) {                                                      \
+                img.addPixelMapData(Point(x, y), Vec4b((uchar)cb, (uchar)cg, (uchar)cr, 0xFF)); \
+            } else {                                                                            \
+                tptr = ptr + y*step + x*3;                                                      \
+                tptr[0] = (uchar)cb;                                                            \
+                tptr[1] = (uchar)cg;                                                            \
+                tptr[2] = (uchar)cr;                                                            \
+            }                                                                                   \
+        }                               
 
         ICV_PUT_POINT((int)((pt2.x + (XY_ONE >> 1)) >> XY_SHIFT),
                       (int)((pt2.y + (XY_ONE >> 1)) >> XY_SHIFT));
@@ -739,13 +768,17 @@ Line2( Mat& img, Point2l pt1, Point2l pt2, const void* color)
     }
     else if( pix_size == 1 )
     {
-        #define  ICV_PUT_POINT(_x,_y) \
-        x = (_x); y = (_y);           \
-        if( 0 <= x && x < size.width && \
-            0 <= y && y < size.height ) \
-        {                           \
-            tptr = ptr + y*step + x;\
-            tptr[0] = (uchar)cb;    \
+        #define  ICV_PUT_POINT(_x,_y)                                                           \
+        x = (_x); y = (_y);                                                                     \
+        if( 0 <= x && x < size.width &&                                                         \
+            0 <= y && y < size.height )                                                         \
+        {                                                                                       \
+            if (img.pixelMapIsEnabled()) {                                                      \
+                img.addPixelMapData(Point(x, y), Vec4b((uchar)cb, (uchar)cb, (uchar)cb, 0xFF)); \
+            } else {                                                                            \
+                tptr = ptr + y*step + x;                                                        \
+                tptr[0] = (uchar)cb;                                                            \
+            }                                                                                   \
         }
 
         ICV_PUT_POINT((int)((pt2.x + (XY_ONE >> 1)) >> XY_SHIFT),
@@ -780,14 +813,19 @@ Line2( Mat& img, Point2l pt1, Point2l pt2, const void* color)
     }
     else
     {
-        #define  ICV_PUT_POINT(_x,_y)   \
-        x = (_x); y = (_y);             \
-        if( 0 <= x && x < size.width && \
-            0 <= y && y < size.height ) \
-        {                               \
-            tptr = ptr + y*step + x*pix_size;\
-            for( j = 0; j < pix_size; j++ ) \
-                tptr[j] = ((uchar*)color)[j]; \
+        #define  ICV_PUT_POINT(_x,_y)                                                                                                     \
+        x = (_x); y = (_y);                                                                                                               \
+        if( 0 <= x && x < size.width &&                                                                                                   \
+            0 <= y && y < size.height )                                                                                                   \
+        {                                                                                                                                 \
+            if (img.pixelMapIsEnabled() && pix_size == 4) {                                                                               \
+                img.addPixelMapData(Point(x, y), Vec4b(((uchar*)color)[0],((uchar*)color)[1] ,((uchar*)color)[2] ,((uchar*)color)[3] ));  \
+            } else {                                                                                                                      \
+                tptr = ptr + y*step + x*pix_size;                                                                                         \
+                for( j = 0; j < pix_size; j++ ) {                                                                                         \
+                    tptr[j] = ((uchar*)color)[j];                                                                                         \
+                }                                                                                                                         \
+            }                                                                                                                             \
         }
 
         ICV_PUT_POINT((int)((pt2.x + (XY_ONE >> 1)) >> XY_SHIFT),
@@ -1059,34 +1097,49 @@ EllipseEx( Mat& img, Point2l center, Size2l axes,
 *                                Polygons filling                                        *
 \****************************************************************************************/
 
-static inline void ICV_HLINE_X(uchar* ptr, int64_t xl, int64_t xr, const uchar* color, int pix_size)
+static inline void ICV_HLINE_X(uchar* ptr, int64_t xl, int64_t xr, const uchar* color, int pix_size, Mat* img = nullptr)
 {
     uchar* hline_min_ptr = (uchar*)(ptr) + (xl)*(pix_size);
     uchar* hline_end_ptr = (uchar*)(ptr) + (xr+1)*(pix_size);
     uchar* hline_ptr = hline_min_ptr;
-    if (pix_size == 1)
-      memset(hline_min_ptr, *color, hline_end_ptr-hline_min_ptr);
-    else//if (pix_size != 1)
-    {
-      if (hline_min_ptr < hline_end_ptr)
-      {
-        memcpy(hline_ptr, color, pix_size);
-        hline_ptr += pix_size;
-      }//end if (hline_min_ptr < hline_end_ptr)
-      size_t sizeToCopy = pix_size;
-      while(hline_ptr < hline_end_ptr)
-      {
-        memcpy(hline_ptr, hline_min_ptr, sizeToCopy);
-        hline_ptr += sizeToCopy;
-        sizeToCopy = std::min(2*sizeToCopy, static_cast<size_t>(hline_end_ptr-hline_ptr));
-      }//end while(hline_ptr < hline_end_ptr)
-    }//end if (pix_size != 1)
+    bool populateMatrix = true;
+
+    if (img != nullptr) {
+      if (img->pixelMapIsEnabled()) {
+        populateMatrix = false;
+        int y = ((ptr - img->data) / img->step);
+        for (int x = xl; x <= xr; x++) {
+          if (pix_size == 1)
+            img->addPixelMapData(Point(x, y), Vec4b(*color, *color, *color, 0xFF));
+          else if (pix_size == 3)
+            img->addPixelMapData(Point(x, y), Vec4b(color[0], color[1], color[2], 0xFF));
+          else if (pix_size == 4)
+            img->addPixelMapData(Point(x, y), Vec4b(color[0], color[1], color[2], color[3]));
+        }
+      }
+    }
+    if (populateMatrix) {
+        if (pix_size == 1) {
+          memset(hline_min_ptr, *color, hline_end_ptr-hline_min_ptr);
+        } else {//if (pix_size != 1)
+          if (hline_min_ptr < hline_end_ptr) {
+            memcpy(hline_ptr, color, pix_size);
+            hline_ptr += pix_size;
+          }//end if (hline_min_ptr < hline_end_ptr)
+          size_t sizeToCopy = pix_size;
+          while(hline_ptr < hline_end_ptr) {
+            memcpy(hline_ptr, hline_min_ptr, sizeToCopy);
+            hline_ptr += sizeToCopy;
+            sizeToCopy = std::min(2*sizeToCopy, static_cast<size_t>(hline_end_ptr-hline_ptr));
+          }//end while(hline_ptr < hline_end_ptr)
+        }//end if (pix_size != 1)
+    }
 }
 //end ICV_HLINE_X()
 
-static inline void ICV_HLINE(uchar* ptr, int64_t xl, int64_t xr, const void* color, int pix_size)
+static inline void ICV_HLINE(uchar* ptr, int64_t xl, int64_t xr, const void* color, int pix_size, Mat* img = nullptr)
 {
-  ICV_HLINE_X(ptr, xl, xr, reinterpret_cast<const uchar*>(color), pix_size);
+  ICV_HLINE_X(ptr, xl, xr, reinterpret_cast<const uchar*>(color), pix_size, img);
 }
 //end ICV_HLINE()
 
@@ -1240,7 +1293,7 @@ FillConvexPoly( Mat& img, const Point2l* v, int npts, const void* color, int lin
                     xx1 = 0;
                 if( xx2 >= size.width )
                     xx2 = size.width - 1;
-                ICV_HLINE( ptr, xx1, xx2, color, pix_size );
+                ICV_HLINE( ptr, xx1, xx2, color, pix_size, &img );
             }
         }
         else
@@ -1457,7 +1510,7 @@ FillEdgeCollection( Mat& img, std::vector<PolyEdge>& edges, const void* color, i
                             x1 = 0;
                         if( x2 >= size.width )
                             x2 = size.width - 1;
-                        ICV_HLINE( timg, x1, x2, color, pix_size );
+                        ICV_HLINE( timg, x1, x2, color, pix_size , &img );
                     }
                 }
                 keep_prelast->x += keep_prelast->dx;
@@ -1514,8 +1567,23 @@ Circle( Mat& img, Point center, int radius, const void* color, int fill )
     int inside = center.x >= radius && center.x < size.width - radius &&
         center.y >= radius && center.y < size.height - radius;
 
-    #define ICV_PUT_POINT( ptr, x )     \
-        memcpy( ptr + (x)*pix_size, color, pix_size );
+
+    #define ICV_PUT_POINT( ptr, x_ )                                                               \
+      do {                                                                                         \
+        int x = (x_);                                                                              \
+        if (img.pixelMapIsEnabled()) {                                                             \
+          const uchar* _color = (const uchar*)color;                                               \
+          int y = ((ptr - img.data) / img.step);                                                   \
+          if (pix_size == 1)                                                                       \
+            img.addPixelMapData(Point(x, y), Vec4b(*_color, *_color, *_color, 0xFF));              \
+          else if (pix_size == 3)                                                                  \
+            img.addPixelMapData(Point(x, y), Vec4b(_color[0], _color[1], _color[2], 0xFF));        \
+          else if (pix_size == 4)                                                                  \
+            img.addPixelMapData(Point(x, y), Vec4b(_color[0], _color[1], _color[2], _color[3]));   \
+        } else {                                                                                   \
+            memcpy( ptr + x*pix_size, color, pix_size );                                           \
+        }                                                                                          \
+      } while(0)
 
     while( dx >= dy )
     {
@@ -1537,8 +1605,8 @@ Circle( Mat& img, Point center, int radius, const void* color, int fill )
             }
             else
             {
-                ICV_HLINE( tptr0, x11, x12, color, pix_size );
-                ICV_HLINE( tptr1, x11, x12, color, pix_size );
+                ICV_HLINE( tptr0, x11, x12, color, pix_size, &img );
+                ICV_HLINE( tptr1, x11, x12, color, pix_size, &img );
             }
 
             tptr0 = ptr + y21 * step;
@@ -1553,8 +1621,8 @@ Circle( Mat& img, Point center, int radius, const void* color, int fill )
             }
             else
             {
-                ICV_HLINE( tptr0, x21, x22, color, pix_size );
-                ICV_HLINE( tptr1, x21, x22, color, pix_size );
+                ICV_HLINE( tptr0, x21, x22, color, pix_size, &img );
+                ICV_HLINE( tptr1, x21, x22, color, pix_size, &img );
             }
         }
         else if( x11 < size.width && x12 >= 0 && y21 < size.height && y22 >= 0)
@@ -1577,7 +1645,7 @@ Circle( Mat& img, Point center, int radius, const void* color, int fill )
                         ICV_PUT_POINT( tptr, x12 );
                 }
                 else
-                    ICV_HLINE( tptr, x11, x12, color, pix_size );
+                    ICV_HLINE( tptr, x11, x12, color, pix_size, &img );
             }
 
             if( y12 >= 0 && y12 < size.height )
@@ -1592,7 +1660,7 @@ Circle( Mat& img, Point center, int radius, const void* color, int fill )
                         ICV_PUT_POINT( tptr, x12 );
                 }
                 else
-                    ICV_HLINE( tptr, x11, x12, color, pix_size );
+                    ICV_HLINE( tptr, x11, x12, color, pix_size, &img );
             }
 
             if( x21 < size.width && x22 >= 0 )
@@ -1615,7 +1683,7 @@ Circle( Mat& img, Point center, int radius, const void* color, int fill )
                             ICV_PUT_POINT( tptr, x22 );
                     }
                     else
-                        ICV_HLINE( tptr, x21, x22, color, pix_size );
+                        ICV_HLINE( tptr, x21, x22, color, pix_size, &img );
                 }
 
                 if( y22 >= 0 && y22 < size.height )
@@ -1630,7 +1698,7 @@ Circle( Mat& img, Point center, int radius, const void* color, int fill )
                             ICV_PUT_POINT( tptr, x22 );
                     }
                     else
-                        ICV_HLINE( tptr, x21, x22, color, pix_size );
+                        ICV_HLINE( tptr, x21, x22, color, pix_size, &img );
                 }
             }
         }
@@ -1824,7 +1892,8 @@ void line( InputOutputArray _img, Point pt1, Point pt2, const Scalar& color,
 {
     CV_INSTRUMENT_REGION();
 
-    Mat img = _img.getMat();
+    Mat& img = _img.getMatRef();
+    //Mat img = _img.getMat();
 
     if( line_type == cv::LINE_AA && img.depth() != CV_8U )
         line_type = 8;
@@ -1863,7 +1932,8 @@ void rectangle( InputOutputArray _img, Point pt1, Point pt2,
 {
     CV_INSTRUMENT_REGION();
 
-    Mat img = _img.getMat();
+    Mat& img = _img.getMatRef();
+    //Mat img = _img.getMat();
 
     if( lineType == cv::LINE_AA && img.depth() != CV_8U )
         lineType = 8;
@@ -1913,7 +1983,8 @@ void circle( InputOutputArray _img, Point center, int radius,
 {
     CV_INSTRUMENT_REGION();
 
-    Mat img = _img.getMat();
+    //Mat img = _img.getMat();
+    Mat& img = _img.getMatRef();
 
     if( line_type == cv::LINE_AA && img.depth() != CV_8U )
         line_type = 8;
@@ -1945,7 +2016,8 @@ void ellipse( InputOutputArray _img, Point center, Size axes,
 {
     CV_INSTRUMENT_REGION();
 
-    Mat img = _img.getMat();
+    //Mat img = _img.getMat();
+    Mat& img = _img.getMatRef();
 
     if( line_type == cv::LINE_AA && img.depth() != CV_8U )
         line_type = 8;
@@ -1975,7 +2047,8 @@ void ellipse(InputOutputArray _img, const RotatedRect& box, const Scalar& color,
 {
     CV_INSTRUMENT_REGION();
 
-    Mat img = _img.getMat();
+    Mat& img = _img.getMatRef();
+    //Mat img = _img.getMat();
 
     if( lineType == cv::LINE_AA && img.depth() != CV_8U )
         lineType = 8;
@@ -2003,7 +2076,8 @@ void fillConvexPoly( InputOutputArray _img, const Point* pts, int npts,
 {
     CV_INSTRUMENT_REGION();
 
-    Mat img = _img.getMat();
+    Mat& img = _img.getMatRef();
+    //Mat img = _img.getMat();
 
     if( !pts || npts <= 0 )
         return;
@@ -2024,7 +2098,8 @@ void fillPoly( InputOutputArray _img, const Point** pts, const int* npts, int nc
 {
     CV_INSTRUMENT_REGION();
 
-    Mat img = _img.getMat();
+    Mat& img = _img.getMatRef();
+    //Mat img = _img.getMat();
 
     if( line_type == cv::LINE_AA && img.depth() != CV_8U )
         line_type = 8;
@@ -2055,7 +2130,8 @@ void polylines( InputOutputArray _img, const Point* const* pts, const int* npts,
 {
     CV_INSTRUMENT_REGION();
 
-    Mat img = _img.getMat();
+    Mat& img = _img.getMatRef();
+    //Mat img = _img.getMat();
 
     if( line_type == cv::LINE_AA && img.depth() != CV_8U )
         line_type = 8;
@@ -2301,7 +2377,8 @@ void putText( InputOutputArray _img, const String& text, Point org,
     {
         return;
     }
-    Mat img = _img.getMat();
+    Mat& img = _img.getMatRef();
+    //Mat img = _img.getMat();
     const int* ascii = getFontData(fontFace);
 
     double buf[4];
