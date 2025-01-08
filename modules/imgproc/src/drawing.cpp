@@ -263,6 +263,13 @@ static void
 Line( Mat& img, Point pt1, Point pt2,
       const void* _color, int connectivity = 8 )
 {
+    if(!img.outputEnabledLine()) return;
+    if(img.subTypeIdxBreak()) {
+        if (img.subTypeIdx() > img.subTypeIdxBreak()) {
+            return;
+        }
+    }
+
     if( connectivity == 0 )
         connectivity = 8;
     else if( connectivity == 1 )
@@ -307,6 +314,7 @@ Line( Mat& img, Point pt1, Point pt2,
             }
         }
     }
+    img.subTypeIdxPlusPlus();
 }
 
 
@@ -327,6 +335,13 @@ static const int FilterTable[] = {
 static void
 LineAA( Mat& img, Point2l pt1, Point2l pt2, const void* color )
 {
+    if(!img.outputEnabledLineAA()) return;
+    if(img.subTypeIdxBreak()) {
+        if (img.subTypeIdx() > img.subTypeIdxBreak()) {
+            return;
+        }
+    }
+
     int64 dx, dy;
     int ecount, scount = 0;
     int slope;
@@ -653,12 +668,20 @@ LineAA( Mat& img, Point2l pt1, Point2l pt2, const void* color )
         }
         #undef ICV_PUT_POINT
     }
+    img.subTypeIdxPlusPlus();
 }
 
 
 static void
 Line2( Mat& img, Point2l pt1, Point2l pt2, const void* color)
 {
+    if(!img.outputEnabledLine2()) return;
+    if(img.subTypeIdxBreak()) {
+        if (img.subTypeIdx() > img.subTypeIdxBreak()) {
+            return;
+        }
+    }
+
     int64 dx, dy;
     int ecount;
     int64 ax, ay;
@@ -858,6 +881,7 @@ Line2( Mat& img, Point2l pt1, Point2l pt2, const void* color)
 
         #undef ICV_PUT_POINT
     }
+    img.subTypeIdxPlusPlus();
 }
 
 
@@ -1105,6 +1129,12 @@ static inline void ICV_HLINE_X(uchar* ptr, int64_t xl, int64_t xr, const uchar* 
     bool populateMatrix = true;
 
     if (img != nullptr) {
+      if(!img->outputEnabledHline()) return;
+      if(img->subTypeIdxBreak()) {
+          if (img->subTypeIdx() > img->subTypeIdxBreak()) {
+              return;
+          }
+      }
       if (img->pixelMapIsEnabled()) {
         populateMatrix = false;
         int y = ((ptr - img->data) / img->step);
@@ -1134,6 +1164,7 @@ static inline void ICV_HLINE_X(uchar* ptr, int64_t xl, int64_t xr, const uchar* 
           }//end while(hline_ptr < hline_end_ptr)
         }//end if (pix_size != 1)
     }
+    img->subTypeIdxPlusPlus();
 }
 //end ICV_HLINE_X()
 
@@ -1904,6 +1935,8 @@ void line( InputOutputArray _img, Point pt1, Point pt2, const Scalar& color,
     double buf[4];
     scalarToRawData( color, buf, img.type(), 0 );
     ThickLine( img, pt1, pt2, buf, thickness, line_type, 3, shift );
+
+    img.typeIdxPlusPlus();
 }
 
 void arrowedLine(InputOutputArray img, Point pt1, Point pt2, const Scalar& color,
@@ -1957,6 +1990,8 @@ void rectangle( InputOutputArray _img, Point pt1, Point pt2,
         PolyLine( img, pt, 4, true, buf, thickness, lineType, shift );
     else
         FillConvexPoly( img, pt, 4, buf, lineType, shift );
+
+    img.typeIdxPlusPlus();
 }
 
 
@@ -2007,6 +2042,8 @@ void circle( InputOutputArray _img, Point center, int radius,
     }
     else
         Circle( img, center, radius, buf, thickness < 0 );
+
+    img.typeIdxPlusPlus();
 }
 
 
@@ -2040,6 +2077,8 @@ void ellipse( InputOutputArray _img, Point center, Size axes,
 
     EllipseEx( img, _center, _axes, _angle, _start_angle,
                _end_angle, buf, thickness, line_type );
+
+    img.typeIdxPlusPlus();
 }
 
 void ellipse(InputOutputArray _img, const RotatedRect& box, const Scalar& color,
@@ -2069,6 +2108,8 @@ void ellipse(InputOutputArray _img, const RotatedRect& box, const Scalar& color,
     axes.width  = (axes.width  << (XY_SHIFT - 1)) + cvRound((box.size.width - axes.width)*(XY_ONE>>1));
     axes.height = (axes.height << (XY_SHIFT - 1)) + cvRound((box.size.height - axes.height)*(XY_ONE>>1));
     EllipseEx( img, center, axes, _angle, 0, 360, buf, thickness, lineType );
+
+    img.typeIdxPlusPlus();
 }
 
 void fillConvexPoly( InputOutputArray _img, const Point* pts, int npts,
@@ -2148,6 +2189,8 @@ void polylines( InputOutputArray _img, const Point* const* pts, const int* npts,
         std::vector<Point2l> _pts(pts[i], pts[i]+npts[i]);
         PolyLine( img, _pts.data(), npts[i], isClosed, buf, thickness, line_type, shift );
     }
+
+    img.typeIdxPlusPlus();
 }
 
 

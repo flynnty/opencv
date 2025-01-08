@@ -2171,13 +2171,48 @@ public:
     using PixelMap = std::vector<PixelMapData>;
     void addPixelMapData(const Point& point, const Vec4b& color, uint8_t aaVal = 0x00, bool aaEn = false) { pixelMapVec.push_back({point, color, aaVal, aaEn}); }
     const PixelMap& pixelMap() const { return pixelMapVec; }
+    PixelMap& pixelMap() { return pixelMapVec; }
 
     bool pixelMapIsEnabled() const {return pixelMapEn;}
-    void pixelMapEnable() { pixelMapEn = true;}
-    void pixelMapDisable() { pixelMapEn = false;}
+    void enablePixelMap() { pixelMapEn = true;}
+    void disablePixelMap() { pixelMapEn = false;}
+
+    // debug features, turn/off line draw outputs to isolate issues
+    void enableOutputLine() { enableLineOutput_ = true; }
+    void disableOutputLine() { enableLineOutput_ = false; }
+    bool outputEnabledLine() const { return enableLineOutput_;}
+
+    void enableOutputLine2() { enableLine2Output_ = true; }
+    void disableOutputLine2() { enableLine2Output_ = false; }
+    bool outputEnabledLine2() const { return enableLine2Output_;}
+
+    void enableOutputLineAA() { enableLineAAOutput_ = true; }
+    void disableOutputLineAA() { enableLineAAOutput_ = false; }
+    bool outputEnabledLineAA() const { return enableLineAAOutput_;}
+
+    void enableOutputHline() { enableHlineOutput_ = true; }
+    void disableOutputHline() { enableHlineOutput_ = false; }
+    bool outputEnabledHline() const { return enableHlineOutput_;}
+
+    int typeIdx() const { return typeIdx_;}
+    int subTypeIdx() const { return subTypeIdx_;}
+    void typeIdxPlusPlus() { typeIdx_++, subTypeIdx_ = 0;}
+    void subTypeIdxPlusPlus() { subTypeIdx_++;}
+
+    void subTypeIdxBreak(int breakAfter) {subTypeIdxBreak_ = breakAfter;}
+    int subTypeIdxBreak() const {return  subTypeIdxBreak_;}
 
 private:
     bool pixelMapEn = false;
+    bool enableLineOutput_ = true;
+    bool enableLine2Output_ = true;
+    bool enableLineAAOutput_ = true;
+    bool enableHlineOutput_ = true;
+
+    int typeIdx_ = 0;
+    int subTypeIdx_ = 0;
+    int subTypeIdxBreak_ = 0;
+
     PixelMap pixelMapVec;
 
 protected:
