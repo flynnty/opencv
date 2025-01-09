@@ -2162,6 +2162,31 @@ public:
 
     //! vecto_v3 additions to Mat class
 
+    struct PixelData {
+        Vec4b color;
+        int typeIdx;
+        int subTypeIdx;
+        uint8_t aaVal;
+        bool aaEn;
+    };
+    using PixelMap1D = std::vector<PixelData>;     // depth
+    using PixelMap2D = std::vector<PixelMap1D>;    // x
+    using PixelMap3D = std::vector<PixelMap2D>;    // y
+
+    PixelMap3D pixelVectorMap;
+
+    void pixelVectorMapInit() {
+        // init x/y dims with empty z for pixel depth
+        pixelVectorMap = PixelMap3D(rows, PixelMap2D(cols, PixelMap1D()));
+    }
+    void addPixelData(int x, int y, const Vec4b& color, int typeIdx, int subTypeIdx, uint8_t aaVal = 0x00, bool aaEn = false) {
+        pixelVectorMap[y][x].push_back({color, typeIdx, subTypeIdx, aaVal, aaEn});
+    }
+    const PixelMap3D& pixelData() const { return pixelVectorMap; }
+    PixelMap3D& pixelData() { return pixelVectorMap; }
+
+
+
     struct PixelMapData {
         Point point;
         Vec4b color;
@@ -2174,7 +2199,7 @@ public:
     PixelMap& pixelMap() { return pixelMapVec; }
 
     bool pixelMapIsEnabled() const {return pixelMapEn;}
-    void enablePixelMap() { pixelMapEn = true;}
+    void enablePixelMap() { pixelMapEn = true, pixelVectorMapInit();}
     void disablePixelMap() { pixelMapEn = false;}
 
     // debug features, turn/off line draw outputs to isolate issues
@@ -2201,6 +2226,9 @@ public:
 
     void subTypeIdxBreak(int breakAfter) {subTypeIdxBreak_ = breakAfter;}
     int subTypeIdxBreak() const {return  subTypeIdxBreak_;}
+    bool subTypeIdxBreakIsEnabled() const { return subTypeIdxBreakEn_; }
+    void subTypeIdxBreakEnable() { subTypeIdxBreakEn_ = true; }
+    void subTypeIdxBreakDisable() { subTypeIdxBreakEn_ = false; }
 
 private:
     bool pixelMapEn = false;
@@ -2212,6 +2240,7 @@ private:
     int typeIdx_ = 0;
     int subTypeIdx_ = 0;
     int subTypeIdxBreak_ = 0;
+    bool subTypeIdxBreakEn_ = false;
 
     PixelMap pixelMapVec;
 

@@ -264,11 +264,6 @@ Line( Mat& img, Point pt1, Point pt2,
       const void* _color, int connectivity = 8 )
 {
     if(!img.outputEnabledLine()) return;
-    if(img.subTypeIdxBreak()) {
-        if (img.subTypeIdx() > img.subTypeIdxBreak()) {
-            return;
-        }
-    }
 
     if( connectivity == 0 )
         connectivity = 8;
@@ -314,7 +309,6 @@ Line( Mat& img, Point pt1, Point pt2,
             }
         }
     }
-    img.subTypeIdxPlusPlus();
 }
 
 
@@ -336,11 +330,6 @@ static void
 LineAA( Mat& img, Point2l pt1, Point2l pt2, const void* color )
 {
     if(!img.outputEnabledLineAA()) return;
-    if(img.subTypeIdxBreak()) {
-        if (img.subTypeIdx() > img.subTypeIdxBreak()) {
-            return;
-        }
-    }
 
     int64 dx, dy;
     int ecount, scount = 0;
@@ -668,7 +657,6 @@ LineAA( Mat& img, Point2l pt1, Point2l pt2, const void* color )
         }
         #undef ICV_PUT_POINT
     }
-    img.subTypeIdxPlusPlus();
 }
 
 
@@ -676,11 +664,6 @@ static void
 Line2( Mat& img, Point2l pt1, Point2l pt2, const void* color)
 {
     if(!img.outputEnabledLine2()) return;
-    if(img.subTypeIdxBreak()) {
-        if (img.subTypeIdx() > img.subTypeIdxBreak()) {
-            return;
-        }
-    }
 
     int64 dx, dy;
     int ecount;
@@ -881,7 +864,6 @@ Line2( Mat& img, Point2l pt1, Point2l pt2, const void* color)
 
         #undef ICV_PUT_POINT
     }
-    img.subTypeIdxPlusPlus();
 }
 
 
@@ -1130,11 +1112,6 @@ static inline void ICV_HLINE_X(uchar* ptr, int64_t xl, int64_t xr, const uchar* 
 
     if (img != nullptr) {
       if(!img->outputEnabledHline()) return;
-      if(img->subTypeIdxBreak()) {
-          if (img->subTypeIdx() > img->subTypeIdxBreak()) {
-              return;
-          }
-      }
       if (img->pixelMapIsEnabled()) {
         populateMatrix = false;
         int y = ((ptr - img->data) / img->step);
@@ -1164,7 +1141,6 @@ static inline void ICV_HLINE_X(uchar* ptr, int64_t xl, int64_t xr, const uchar* 
           }//end while(hline_ptr < hline_end_ptr)
         }//end if (pix_size != 1)
     }
-    img->subTypeIdxPlusPlus();
 }
 //end ICV_HLINE_X()
 
@@ -1745,6 +1721,7 @@ Circle( Mat& img, Point center, int radius, const void* color, int fill )
     }
 
     #undef  ICV_PUT_POINT
+
 }
 
 
@@ -1842,6 +1819,14 @@ PolyLine( Mat& img, const Point2l* v, int count, bool is_closed,
     p0 = v[i];
     for( i = !is_closed; i < count; i++ )
     {
+        // vecto_v3
+        if(img.subTypeIdxBreakIsEnabled()) {
+            if (img.subTypeIdx() > img.subTypeIdxBreak()) {
+                return;
+            }
+            // i == 0 draws the 1st connection only
+            if (i != 0) img.subTypeIdxPlusPlus();
+        }
         Point2l p = v[i];
         ThickLine( img, p0, p, color, thickness, line_type, flags, shift );
         p0 = p;
@@ -2562,6 +2547,13 @@ void cv::polylines(InputOutputArray img, InputArrayOfArrays pts,
 {
     CV_INSTRUMENT_REGION();
 
+    // vecto_v3 fill styles
+    bool fillUnion = thickness < 0 && thickness >= -1000;
+    if (fillUnion) thickness *= -1;
+    bool fillExOr = thickness < -1000;
+    if (fillExOr) thickness = (thickness + 1000) * -1;
+    
+
     bool manyContours = pts.kind() == _InputArray::STD_VECTOR_VECTOR ||
                         pts.kind() == _InputArray::STD_VECTOR_MAT;
     int i, ncontours = manyContours ? (int)pts.total() : 1;
@@ -2584,8 +2576,23 @@ void cv::polylines(InputOutputArray img, InputArrayOfArrays pts,
         CV_Assert(p.checkVector(2, CV_32S) >= 0);
         ptsptr[i] = p.ptr<Point>();
         npts[i] = p.rows*p.cols*p.channels()/2;
+
+        // vecto_v3
+        if (fillUnion) {
+            // fill every poly path as an individual type
+            // polyfill happens on same typeIdx as pline so we can properly handle pixels
+            std::vector<cv::Point> path;
+            p.copyTo(path);
+            fillPoly(img, path, color);
+        }
     }
     polylines(img, (const Point**)ptsptr, npts, (int)ncontours, isClosed, color, thickness, lineType, shift);
+
+    // vecto_v3
+    if (fillExOr) {
+        // polyfill happens on same typeIdx as pline so we can properly handle pixels
+        fillPoly(img, pts, color);
+    }
 }
 
 namespace
